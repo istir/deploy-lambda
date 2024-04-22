@@ -2,16 +2,19 @@ import os
 import subprocess
 import sys
 import zipfile
-from config import CONFIG
+from config import config
 from my_types import Function
-import hashlib
+
+from utils.hash import Hash
 
 
 class Util:
     temp_dir: str
     entry_point: str
+    hasher: Hash
 
     def __init__(self):
+        self.hasher = Hash()
         entry = self.get_arguments()["--entry"]
         if not entry:
             print("No entry point found")
@@ -55,16 +58,16 @@ class Util:
         api_path = os.path.join(*os.path.split(path)[:-1])
         method = os.path.split(path)[-1]
         name = name.split(".")[0]
-        prefix = CONFIG.get("prefix")
+        prefix = config.config.get("prefix")
         if prefix:
             name = f"{prefix}-{name}"
         out = self.build_code(file_path, name)
-        hashing_result = self.compare_hash(out, name)
+        hashing_result = self.hasher.compare_hash(out, name)
         print("res", hashing_result)
         # if hashing_result == True:
         #     return False
 
-        self.save_hash(out, name)
+        self.hasher.save_hash(out, os.path.join(self.temp_dir, name))
         return Function(api_path=api_path, method=method, name=name, binary_path=out)
 
     def build_code(self, function_path: str, function_name: str) -> str:
@@ -82,32 +85,8 @@ class Util:
             zf.write(file, arcname=os.path.basename(file))
         return output
 
-    def hash_file(self, file: str) -> str:
-        with open(file, "rb") as f:
-            data = f.read()
-            sha1_hash = hashlib.sha1(data).hexdigest()
-        return sha1_hash
-
-    def save_hash(self, file: str, function_name: str) -> str:
-        hash = self.hash_file(file)
-        hash_data = os.path.join(self.temp_dir, function_name, "hash.sha1")
-        with open(hash_data, "w") as f:
-            f.write(hash)
-        return hash
-
-    def compare_hash(self, file: str, function_name: str) -> bool:
-        hash_data = os.path.join(self.temp_dir, function_name, "hash.sha1")
-
-        current_hash = self.hash_file(file)
-        if os.path.exists(hash_data):
-            with open(hash_data, "r") as f:
-                saved_hash = f.read()
-            if current_hash == saved_hash:
-                return True
-        return False
-
     def create_arn(self, function_name: str):
-        return f"arn:aws:lambda:{CONFIG['region']}:{CONFIG['account_id']}:function:{function_name}"
+        return f"arn:aws:lambda:{config.config['region']}:{config.config['account_id']}:function:{function_name}"
 
 
 util = Util()

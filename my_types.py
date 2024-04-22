@@ -16,3 +16,25 @@ class ApiGatewayResponse(TypedDict):
     parentId: str
     pathPart: str
     path: str
+
+
+CONFIG_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "prefix": {"type": "string"},
+        "region": {"type": "string"},
+        "account_id": {"type": "string"},
+        "api_id": {"type": "string"},
+        "lambda_role": {"type": "string"},
+        "should_compare_hashes": {"type": "boolean"},
+    },
+}
+
+
+@dataclass
+class ConfigSchema(TypedDict):
+    prefix: str
+    region: str
+    account_id: str
+    api_id: str
+    lambda_role: str

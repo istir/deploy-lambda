@@ -3,7 +3,7 @@ import boto3
 from boto3.session import Session
 from botocore.exceptions import ClientError
 from my_types import ApiGatewayResponse, Function
-from config import CONFIG
+from config import config
 from util import util
 
 lambda_client = Session().client("lambda")  # type:ignore
@@ -49,14 +49,14 @@ def create_function(zip: str, name: str):
         Handler="bootstrap",
         Code={"ZipFile": read_zip_code(zip)},
         Publish=False,
-        Role=f"arn:aws:iam::{CONFIG["account_id"]}:role/service-role/{CONFIG['lambda_role']}",
+        Role=f"arn:aws:iam::{config.config["account_id"]}:role/service-role/{config.config['lambda_role']}",
     )
     lambda_client.add_permission(
         FunctionName=name,
         StatementId="ApiGatewayPermission",
         Action="lambda:InvokeFunction",
         Principal="apigateway.amazonaws.com",
-        SourceArn=f"arn:aws:execute-api:{CONFIG["region"]}:{CONFIG["account_id"]}:{CONFIG['api_id']}/*/*"
+        SourceArn=f"arn:aws:execute-api:{config.config["region"]}:{config.config["account_id"]}:{config.config['api_id']}/*/*"
     )
 
 
@@ -66,7 +66,7 @@ def read_zip_code(zip: str) -> bytes:
 
 
 def create_api_gateway_resources(function: Function) -> str:
-    api_id = CONFIG["api_id"]
+    api_id = config.config["api_id"]
     if not api_id:
         print("No api id, skipping")
         return ""
@@ -107,7 +107,7 @@ def create_api_gateway_method(function: Function, id: str, api_id: str):
         resourceId=id,
         restApiId=api_id,
         type="AWS_PROXY",
-        uri=f"arn:aws:apigateway:{CONFIG['region']}:lambda:path/2015-03-31/functions/{util.create_arn(function['name'])}/invocations",
+        uri=f"arn:aws:apigateway:{config.config['region']}:lambda:path/2015-03-31/functions/{util.create_arn(function['name'])}/invocations",
     )
 
 
